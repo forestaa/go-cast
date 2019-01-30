@@ -52,9 +52,10 @@ type QueueLoadCommand struct {
 }
 
 type MediaItem struct {
-	ContentId   string `json:"contentId"`
-	StreamType  string `json:"streamType"`
-	ContentType string `json:"contentType"`
+	ContentId   string      `json:"contentId"`
+	StreamType  string      `json:"streamType"`
+	ContentType string      `json:"contentType"`
+	MetaData    interface{} `json:"metadata"`
 }
 
 type MediaMetaData struct {
@@ -210,7 +211,7 @@ func (c *MediaController) LoadMedia(ctx context.Context, media MediaItem, curren
 	return message, nil
 }
 
-func (c *MediaController) QueueLoad(ctx context.Context, medias []MediaItem, metas []MediaMetaData, startIndex int, customData interface{}) (*api.CastMessage, error) {
+func (c *MediaController) QueueLoad(ctx context.Context, medias []MediaItem, startIndex int, customData interface{}) (*api.CastMessage, error) {
 	queueItems := make([]QueueItem, len(medias))
 	for i, media := range medias {
 		queueItems[i] = QueueItem{

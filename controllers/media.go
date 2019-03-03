@@ -31,6 +31,7 @@ var commandMediaPause = net.PayloadHeaders{Type: "PAUSE"}
 var commandMediaStop = net.PayloadHeaders{Type: "STOP"}
 var commandMediaLoad = net.PayloadHeaders{Type: "LOAD"}
 var commandQueueLoad = net.PayloadHeaders{Type: "QUEUE_LOAD"}
+var commandQueueInsert = net.PayloadHeaders{Type: "QUEUE_INSERT"}
 
 type MediaCommand struct {
 	net.PayloadHeaders
@@ -49,6 +50,12 @@ type QueueLoadCommand struct {
 	net.PayloadHeaders
 	StartIndex int         `json:"startIndex"`
 	Items      []QueueItem `json:"items"`
+}
+
+type QueueInsertCommand struct {
+	net.PayloadHeaders
+	MediaSessionID int         `json:"mediaSessionId"`
+	Items          []QueueItem `json:"items"`
 }
 
 type MediaItem struct {
@@ -234,6 +241,34 @@ func (c *MediaController) QueueLoad(ctx context.Context, medias []MediaItem, sta
 	}
 	if response.Type == "LOAD_FAILED" {
 		return nil, errors.New("Queue Load failed")
+	}
+
+	return message, nil
+}
+
+func (c *MediaController) QueueInsert(ctx context.Context, medias []MediaItem, customData interface{}) (*api.CastMessage, error) {
+	queueItems := make([]QueueItem, len(medias))
+	for i, media := range medias {
+		queueItems[i] = QueueItem{
+			Media: media,
+		}
+	}
+	message, err := c.channel.Request(ctx, &QueueInsertCommand{
+		PayloadHeaders: commandQueueInsert,
+		MediaSessionID: c.MediaSessionID,
+		Items:          queueItems,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Failed to send queueinsert command: %s", err)
+	}
+
+	response := &net.PayloadHeaders{}
+	err = json.Unmarshal([]byte(*message.PayloadUtf8), response)
+	if err != nil {
+		return nil, err
+	}
+	if response.Type == "LOAD_FAILED" {
+		return nil, errors.New("Queue Insert failed")
 	}
 
 	return message, nil
